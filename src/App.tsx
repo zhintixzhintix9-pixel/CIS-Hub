@@ -142,6 +142,8 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [passInput, setPassInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const [notification, setNotification] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [deleteId, setDeleteId] = useState<{ col: string; id: string } | null>(null);
 
   // Data State
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -169,8 +171,8 @@ export default function App() {
       setBuilds(snap.docs.map(d => ({ id: d.id, ...d.data() } as Build)));
     });
 
-    // Forced fast loader exit for better UX
-    const loaderTimer = setTimeout(() => setLoading(false), 800);
+    // Instant loader exit for better UX
+    const loaderTimer = setTimeout(() => setLoading(false), 300);
 
     return () => { 
       unsubT(); unsubTeams(); unsubShops(); unsubBuilds(); 
@@ -178,46 +180,89 @@ export default function App() {
     };
   }, []);
 
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   const handleAdminAuth = () => {
     if (passInput === MASTER_PASS) {
       setIsAdmin(true);
+      showToast("Админ-панель открыта");
     } else {
-      alert("Неверный пароль");
+      showToast("Неверный пароль", "error");
     }
   };
 
   const addItem = async (col: string, data: any) => {
     try {
-      console.log(`Attempting to add to ${col}:`, data);
+      if (!data.name && !data.nickname) {
+        showToast("Заполните название", "error");
+        return;
+      }
       await addDoc(collection(db, col), { 
         ...data, 
-        createdAt: Timestamp.now(),
-        serverTimestamp: Date.now() // Alternative just in case
+        createdAt: Timestamp.now()
       });
-      alert("Опубликовано! Теперь этот контент видят все пользователи.");
+      showToast("Опубликовано!");
     } catch (e: any) {
       console.error("Firebase Error:", e);
-      alert(`Ошибка при сохранении: ${e.message}. Проверьте соединение или права доступа.`);
+      showToast(`Ошибка: Настройте базу данных в консоли`, "error");
     }
   };
 
-  const deleteItem = async (col: string, id: string) => {
-    if (window.confirm("Удалить этот элемент для всех?")) {
-      await deleteDoc(doc(db, col, id));
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteDoc(doc(db, deleteId.col, deleteId.id));
+      showToast("Удалено");
+      setDeleteId(null);
+    } catch (e) {
+      showToast("Ошибка при удалении", "error");
+      setDeleteId(null);
     }
   };
 
   return (
     <div className="min-h-screen text-white pb-32">
-      {/* --- Loader --- */}
+      {/* --- Toast Notification --- */}
       <AnimatePresence>
-        {loading && (
+        {notification && (
           <motion.div 
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#05050b] z-[9999] flex items-center justify-center"
+            initial={{ opacity: 0, y: -20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, scale: 0.9, x: "-50%" }}
+            className={cn(
+               "fixed top-6 left-1/2 z-[10000] px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl border border-white/10",
+               notification.type === 'success' ? "bg-emerald-500/90 backdrop-blur-md" : "bg-red-500/90 backdrop-blur-md"
+            )}
           >
-            <div className="text-2xl font-bold tracking-[0.4em] animate-pulse">CIS HUB</div>
+            {notification.msg}
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- Delete Confirmation Modal --- */}
+      <AnimatePresence>
+        {deleteId && (
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setDeleteId(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-[#0a0a10] border border-white/5 p-8 rounded-3xl w-full max-w-sm shadow-2xl"
+            >
+              <h3 className="text-lg font-bold mb-2">Удалить элемент?</h3>
+              <p className="text-gray-500 text-xs mb-8 uppercase tracking-widest leading-loose">Это действие удалит контент у всех пользователей навсегда.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <button onClick={() => setDeleteId(null)} className="py-4 bg-white/5 rounded-2xl text-[10px] uppercase font-bold tracking-widest">Отмена</button>
+                <button onClick={confirmDelete} className="py-4 bg-red-500 text-white rounded-2xl text-[10px] uppercase font-bold tracking-widest">Удалить</button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -461,7 +506,10 @@ export default function App() {
                                  <span className="text-sm font-medium tracking-tight truncate max-w-[200px]">{item.name || item.nickname}</span>
                               </div>
                               <button 
-                                onClick={() => deleteItem(item.type ? 'builds' : (item.prize ? 'tournaments' : item.captain ? 'teams' : 'shops'), item.id)}
+                                onClick={() => setDeleteId({
+                                  col: item.type ? 'builds' : (item.prize ? 'tournaments' : item.captain ? 'teams' : 'shops'), 
+                                  id: item.id
+                                })}
                                 className="p-3 text-red-500/50 hover:text-red-500 transition"
                               >
                                 <Trash2 size={16} />
