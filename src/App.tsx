@@ -167,10 +167,15 @@ export default function App() {
     });
     const unsubBuilds = onSnapshot(query(collection(db, 'builds'), orderBy('createdAt', 'desc')), snap => {
       setBuilds(snap.docs.map(d => ({ id: d.id, ...d.data() } as Build)));
-      setLoading(false);
     });
 
-    return () => { unsubT(); unsubTeams(); unsubShops(); unsubBuilds(); };
+    // Forced fast loader exit for better UX
+    const loaderTimer = setTimeout(() => setLoading(false), 800);
+
+    return () => { 
+      unsubT(); unsubTeams(); unsubShops(); unsubBuilds(); 
+      clearTimeout(loaderTimer);
+    };
   }, []);
 
   const handleAdminAuth = () => {
@@ -183,11 +188,16 @@ export default function App() {
 
   const addItem = async (col: string, data: any) => {
     try {
-      await addDoc(collection(db, col), { ...data, createdAt: Timestamp.now() });
-      alert("Опубликовано!");
-    } catch (e) {
-      console.error(e);
-      alert("Ошибка при публикации");
+      console.log(`Attempting to add to ${col}:`, data);
+      await addDoc(collection(db, col), { 
+        ...data, 
+        createdAt: Timestamp.now(),
+        serverTimestamp: Date.now() // Alternative just in case
+      });
+      alert("Опубликовано! Теперь этот контент видят все пользователи.");
+    } catch (e: any) {
+      console.error("Firebase Error:", e);
+      alert(`Ошибка при сохранении: ${e.message}. Проверьте соединение или права доступа.`);
     }
   };
 
@@ -242,7 +252,7 @@ export default function App() {
 
           {activeTab === 'teams' && (
             <motion.div key="teams" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-               <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Users size={20} className="text-amber-400" /> Команды</h2>
+               <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Users size={20} className="text-yellow-400" /> Команды</h2>
                <div className="space-y-6">
                  {teams.map(t => (
                    <GlassCard key={t.id} className="!p-0 overflow-hidden">
@@ -272,7 +282,7 @@ export default function App() {
 
           {activeTab === 'shops' && (
             <motion.div key="shops" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-               <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><ShoppingCart size={20} className="text-emerald-400" /> Магазины</h2>
+               <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><ShoppingCart size={20} className="text-green-400" /> Магазины</h2>
                <div className="space-y-6">
                   {shops.map(s => (
                     <GlassCard key={s.id} className="!p-0 overflow-hidden">
@@ -476,18 +486,18 @@ export default function App() {
       {/* --- Navebar --- */}
       <nav className="fixed bottom-0 inset-x-0 h-24 bg-black/80 backdrop-blur-2xl border-t border-white/5 px-6 flex items-center justify-around z-50 pb-safe">
         {[
-          { id: 'tournaments', icon: Trophy, label: 'Турниры' },
-          { id: 'teams', icon: Users, label: 'Команды' },
-          { id: 'shops', icon: ShoppingCart, label: 'Шопы' },
-          { id: 'builds', icon: Wrench, label: 'Билды' },
-          { id: 'admin', icon: Lock, label: 'Админ' }
+          { id: 'tournaments', icon: Trophy, label: 'Турниры', color: 'text-blue-400' },
+          { id: 'teams', icon: Users, label: 'Команды', color: 'text-yellow-400' },
+          { id: 'shops', icon: ShoppingCart, label: 'Шопы', color: 'text-green-400' },
+          { id: 'builds', icon: Wrench, label: 'Билды', color: 'text-purple-400' },
+          { id: 'admin', icon: Lock, label: 'Админ', color: 'text-white' }
         ].map(tab => (
           <button 
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={cn(
               "flex flex-col items-center gap-1.5 transition-all duration-300",
-              activeTab === tab.id ? "text-white scale-110" : "text-gray-500"
+              activeTab === tab.id ? `${tab.color} scale-110` : "text-gray-500"
             )}
           >
             <tab.icon size={20} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
