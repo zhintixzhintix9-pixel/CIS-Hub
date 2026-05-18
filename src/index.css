@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --obsidian-bg: #05050b;
+}
+
+body {
+  background-color: var(--obsidian-bg);
+  color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Стили для скроллбара в стиле Obsidian */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #05050b;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
