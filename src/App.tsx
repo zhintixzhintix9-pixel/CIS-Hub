@@ -242,7 +242,7 @@ export default function App() {
 
           {activeTab === 'teams' && (
             <motion.div key="teams" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-               <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Users size={20} className="text-emerald-400" /> Команды</h2>
+               <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Users size={20} className="text-amber-400" /> Команды</h2>
                <div className="space-y-6">
                  {teams.map(t => (
                    <GlassCard key={t.id} className="!p-0 overflow-hidden">
@@ -272,7 +272,7 @@ export default function App() {
 
           {activeTab === 'shops' && (
             <motion.div key="shops" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-               <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><ShoppingCart size={20} className="text-amber-400" /> Магазины</h2>
+               <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><ShoppingCart size={20} className="text-emerald-400" /> Магазины</h2>
                <div className="space-y-6">
                   {shops.map(s => (
                     <GlassCard key={s.id} className="!p-0 overflow-hidden">
@@ -403,6 +403,21 @@ export default function App() {
                          <button onClick={() => {
                            addItem('teams', teamForm);
                            setTeamForm({ name: '', captain: '', banner: '', logo: '', age: '16+', link: '', desc: '' });
+                         }} className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase text-xs tracking-widest">Опубликовать</button>
+                      </div>
+                   </GlassCard>
+
+                   {/* --- Shop Form --- */}
+                   <GlassCard className="p-6">
+                      <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-emerald-400">Новый Магазин</h3>
+                      <div className="space-y-4">
+                         <input value={shopForm.name} onChange={e => setShopForm({...shopForm, name: e.target.value})} placeholder="Название магазина" className="admin-input" />
+                         <ImageUpload label="Баннер Магазина" preview={shopForm.banner} onUpload={v => setShopForm({...shopForm, banner: v})} />
+                         <ImageUpload label="Логотип Магазина" preview={shopForm.logo} onUpload={v => setShopForm({...shopForm, logo: v})} />
+                         <textarea value={shopForm.prices} onChange={e => setShopForm({...shopForm, prices: e.target.value})} placeholder="Услуги и цены (каждая с новой строки)" className="admin-input min-h-[120px]" />
+                         <button onClick={() => {
+                           addItem('shops', shopForm);
+                           setShopForm({ name: '', banner: '', logo: '', prices: '' });
                          }} className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase text-xs tracking-widest">Опубликовать</button>
                       </div>
                    </GlassCard>
