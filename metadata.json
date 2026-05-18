@@ -1,0 +1,6 @@
+{
+  "name": "CIS Hub",
+  "description": "Независимый игровой хаб с турнирами, командами и магазинами. Platinum Obsidian Design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CIS Hub | Platinum Obsidian</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    
+    <!-- Firebase SDK (Modular CDN) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+        // Hardcoded Firebase Config as per User Request
+        const firebaseConfig = {
+            apiKey: "AIzaSyDvKYiufhl2jWGHRQUns_nIrFlodE2MlME",
+            authDomain: "ssr-web-17b90.firebaseapp.com",
+            projectId: "ssr-web-17b90",
+            storageBucket: "ssr-web-17b90.firebasestorage.app",
+            messagingSenderId: "635491971935",
+            appId: "1:635491971935:web:3b460ae49347d1b9eafcea",
+            measurementId: "G-F9MHXV1GCX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app);
+        window.fbUtils = { collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy };
+    </script>
+
+    <style>
+        /* Platinum Obsidian Design System */
+        :root {
+            --obsidian-bg: #05050b;
+            --glass-bg: rgba(20, 20, 25, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.04);
+            --text-primary: #FFFFFF;
+            --text-secondary: #9CA3AF;
+        }
+
+        body {
+            background-color: var(--obsidian-bg);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.2s ease;
+        }
+
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            height: 70px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 10px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .tab-item.active {
+            color: var(--text-primary);
+        }
+
+        .tab-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+        }
+
+        .content-section {
+            display: none;
+            padding: 20px;
+            padding-bottom: 140px; /* Space for footer and tab bar */
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Tags */
+        .tag {
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .tag-grip { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .tag-drift { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .tag-full { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        /* Admin Forms */
+        input, textarea, select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        button.btn-primary {
+            background: white;
+            color: black;
+            font-weight: 600;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        button.btn-delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
+
+        /* Banner & Logo overlap */
+        .team-banner {
+            height: 120px;
+            width: 100%;
+            object-fit: cover;
+            border-radius: 12px 12px 0 0;
+        }
+        .team-logo-container {
+            margin-top: -40px;
+            margin-left: 16px;
+            position: relative;
+        }
+        .team-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--obsidian-bg);
+            background: #1a1a1a;
+            object-fit: cover;
+        }
+
+        /* Commercial Footer */
+        .commercial-footer {
+            padding: 40px 20px;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+        }
+        .footer-link {
+            display: block;
+            color: var(--text-primary);
+            text-decoration: none;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .footer-link:hover { opacity: 1; }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: var(--obsidian-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="text-white font-bold text-2xl tracking-widest animate-pulse">CIS HUB</div>
+    </div>
+
+    <!-- UI Header -->
+    <header class="pt-10 pb-4 px-6">
+        <h1 class="text-3xl font-bold tracking-tight">CIS Hub</h1>
+        <p class="text-gray-400 text-sm mt-1">Independent Gaming Community</p>
+    </header>
+
+    <!-- Content Sections -->
+    <main id="main-content">
+        <!-- Tournaments -->
+        <section id="tournaments-section" class="content-section active">
+            <h2 class="text-xl font-semibold mb-6">CIS Tournaments</h2>
+            <div id="tournaments-list" class="space-y-4">
+                <!-- Items will be injected here -->
+            </div>
+        </section>
+
+        <!-- Teams -->
+        <section id="teams-section" class="content-section">
+            <h2 class="text-xl font-semibold mb-6">Teams & Clans</h2>
+            <div id="teams-list" class="space-y-6">
+                <!-- Items will be injected here -->
+            </div>
+        </section>
+
+        <!-- Shops -->
+        <section id="shops-section" class="content-section">
+            <h2 class="text-xl font-semibold mb-6">Community Shops</h2>
+            <div id="shops-list" class="space-y-6">
+                <!-- Items will be injected here -->
+            </div>
+        </section>
+
+        <!-- Admin -->
+        <section id="admin-section" class="content-section">
+            <h2 class="text-xl font-semibold mb-6">Admin Panel</h2>
+            
+            <div id="admin-login" class="glass-card p-8">
+                <p class="text-gray-400 mb-4">Access restricted. Enter master password.</p>
+                <input type="password" id="admin-pass" placeholder="••••••••••••">
+                <button onclick="checkAdminPassword()" class="btn-primary">Unlock Panel</button>
+                <p id="admin-error" class="text-red-500 text-xs mt-4 hidden">Incorrect password. Please try again.</p>
+            </div>
+
+            <div id="admin-panel" class="hidden space-y-10">
+                <!-- Add Tournament -->
+                <div class="glass-card">
+                    <h3 class="text-lg font-bold mb-4">Add Tournament</h3>
+                    <input type="text" id="t-name" placeholder="Tournament Name">
+                    <input type="text" id="t-date" placeholder="Date (e.g. 25 June, 18:00)">
+                    <input type="text" id="t-prize" placeholder="Prize Pool">
+                    <select id="t-mode">
+                        <option value="grip">Grip</option>
+                        <option value="drift">Drift</option>
+                        <option value="full">Full</option>
+                    </select>
+                    <input type="text" id="t-orgs" placeholder="Organizers (comma separated)">
+                    <textarea id="t-desc" placeholder="Tournament Description" rows="3"></textarea>
+                    <button onclick="addTournament()" class="btn-primary">Create Tournament</button>
+                </div>
+
+                <!-- Add Team -->
+                <div class="glass-card">
+                    <h3 class="text-lg font-bold mb-4">Add Team</h3>
+                    <input type="text" id="team-name" placeholder="Team Name">
+                    <input type="text" id="team-captain" placeholder="Captain Nickname">
+                    <input type="text" id="team-banner" placeholder="Banner Image URL">
+                    <input type="text" id="team-logo" placeholder="Logo Image URL">
+                    <input type="text" id="team-age" placeholder="Age limit (e.g. 16+)">
+                    <input type="text" id="team-link" placeholder="Contact link (URL)">
+                    <textarea id="team-desc" placeholder="Team Description" rows="3"></textarea>
+                    <button onclick="addTeam()" class="btn-primary">Register Team</button>
+                </div>
+
+                <!-- Add Shop -->
+                <div class="glass-card">
+                    <h3 class="text-lg font-bold mb-4">Add Shop</h3>
+                    <input type="text" id="shop-name" placeholder="Shop Name">
+                    <input type="text" id="shop-banner" placeholder="Banner Image URL">
+                    <input type="text" id="shop-logo" placeholder="Logo Image URL">
+                    <textarea id="shop-prices" placeholder="Price List / Services" rows="5"></textarea>
+                    <button onclick="addShop()" class="btn-primary">Post Shop</button>
+                </div>
+
+                <!-- Manage Content List with Delete buttons -->
+                <div class="glass-card">
+                    <h3 class="text-lg font-bold mb-4">Existing Records</h3>
+                    <div id="admin-manage-list" class="space-y-4">
+                        <!-- Items will be injected here -->
+                    </div>
+                </div>
+
+                <button onclick="logoutAdmin()" class="mt-10 text-gray-500 text-sm w-full text-center">Logout</button>
+            </div>
+        </section>
+
+        <!-- Commercial Footer -->
+        <footer class="commercial-footer">
+            <a href="https://t.me/AntiSocialDetiz" class="footer-link">
+                Хочешь добавить команду, магазин или провести турнир? Переходи сюда: <span class="font-bold">@AntiSocialDetiz</span>
+            </a>
+            <a href="https://t.me/notzhin" class="footer-link">
+                Нужны услуги программиста/дизайнера? Переходи сюда: <span class="font-bold">@notzhin</span>
+            </a>
+        </footer>
+    </main>
+
+    <!-- Tab Bar -->
+    <nav class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('tournaments', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+            <span>Турниры</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('teams', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Команды</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('shops', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+            <span>Магазины</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('admin', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>Админка</span>
+        </div>
+    </nav>
+
+    <!-- Logic Script -->
+    <script type="module">
+        const MASTER_PASS = "cisweb08090420074080";
+
+        // State Management
+        let currentTab = 'tournaments';
+        
+        // Wait for Firebase to initialize onto window
+        const init = () => {
+            if (!window.db) {
+                setTimeout(init, 100);
+                return;
+            }
+            
+            setupListeners();
+            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
+        };
+
+        window.onload = init;
+
+        // Tab Switching Logic
+        window.switchTab = (tabId, element) => {
+            if (currentTab === tabId) return;
+
+            const sections = document.querySelectorAll('.content-section');
+            const items = document.querySelectorAll('.tab-item');
+            
+            // Inertia Blur Effect with GSAP
+            const currentSection = document.getElementById(`${currentTab}-section`);
+            const targetSection = document.getElementById(`${tabId}-section`);
+
+            gsap.to(currentSection, {
+                filter: "blur(10px)",
+                opacity: 0,
+                duration: 0.3,
+                onComplete: () => {
+                    currentSection.classList.remove('active');
+                    targetSection.classList.add('active');
+                    gsap.fromTo(targetSection, 
+                        { filter: "blur(10px)", opacity: 0, y: 10 },
+                        { filter: "blur(0px)", opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }
+                    );
+                }
+            });
+
+            items.forEach(i => i.classList.remove('active'));
+            element.classList.add('active');
+            currentTab = tabId;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // Admin Logic
+        window.checkAdminPassword = () => {
+            const passInput = document.getElementById('admin-pass');
+            const errorMsg = document.getElementById('admin-error');
+            const loginBox = document.getElementById('admin-login');
+            const adminPanel = document.getElementById('admin-panel');
+
+            if (passInput.value === MASTER_PASS) {
+                gsap.to(loginBox, { opacity: 0, x: -20, duration: 0.3, onComplete: () => {
+                    loginBox.classList.add('hidden');
+                    adminPanel.classList.remove('hidden');
+                    gsap.from(adminPanel, { opacity: 0, x: 20, duration: 0.3 });
+                }});
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        };
+
+        window.logoutAdmin = () => {
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('admin-login').classList.remove('hidden');
+            document.getElementById('admin-pass').value = '';
+            document.getElementById('admin-login').style.opacity = '1';
+        };
+
+        // Firebase Operations
+        async function addItem(collectionName, data) {
+            try {
+                await window.fbUtils.addDoc(window.fbUtils.collection(window.db, collectionName), {
+                    ...data,
+                    createdAt: Date.now()
+                });
+                alert('Added successfully!');
+                return true;
+            } catch (err) {
+                console.error(err);
+                alert('Error adding item');
+                return false;
+            }
+        }
+
+        window.addTournament = async () => {
+            const data = {
+                name: document.getElementById('t-name').value,
+                date: document.getElementById('t-date').value,
+                prize: document.getElementById('t-prize').value,
+                mode: document.getElementById('t-mode').value,
+                orgs: document.getElementById('t-orgs').value.split(',').map(s => s.trim()),
+                description: document.getElementById('t-desc').value
+            };
+            if (Object.values(data).some(v => !v)) return alert('Fill all fields');
+            if (await addItem('tournaments', data)) {
+                ['t-name', 't-date', 't-prize', 't-desc', 't-orgs'].forEach(id => document.getElementById(id).value = '');
+            }
+        };
+
+        window.addTeam = async () => {
+            const data = {
+                name: document.getElementById('team-name').value,
+                captain: document.getElementById('team-captain').value,
+                banner: document.getElementById('team-banner').value,
+                logo: document.getElementById('team-logo').value,
+                age: document.getElementById('team-age').value,
+                link: document.getElementById('team-link').value,
+                description: document.getElementById('team-desc').value
+            };
+            if (Object.values(data).some(v => !v)) return alert('Fill all fields');
+            if (await addItem('teams', data)) {
+                ['team-name', 'team-captain', 'team-banner', 'team-logo', 'team-age', 'team-link', 'team-desc'].forEach(id => document.getElementById(id).value = '');
+            }
+        };
+
+        window.addShop = async () => {
+            const data = {
+                name: document.getElementById('shop-name').value,
+                banner: document.getElementById('shop-banner').value,
+                logo: document.getElementById('shop-logo').value,
+                prices: document.getElementById('shop-prices').value
+            };
+            if (Object.values(data).some(v => !v)) return alert('Fill all fields');
+            if (await addItem('shops', data)) {
+                ['shop-name', 'shop-banner', 'shop-logo', 'shop-prices'].forEach(id => document.getElementById(id).value = '');
+            }
+        };
+
+        window.deleteItem = async (col, id) => {
+            if (confirm('Delete this record?')) {
+                await window.fbUtils.deleteDoc(window.fbUtils.doc(window.db, col, id));
+            }
+        };
+
+        // Listeners for Real-time Updates
+        function setupListeners() {
+            const qT = window.fbUtils.query(window.fbUtils.collection(window.db, "tournaments"), window.fbUtils.orderBy("createdAt", "desc"));
+            window.fbUtils.onSnapshot(qT, (snapshot) => {
+                const list = document.getElementById('tournaments-list');
+                list.innerHTML = '';
+                const manageList = document.getElementById('admin-manage-list');
+                const tHeader = `<div class="text-xs text-gray-500 uppercase mt-4 mb-2">Tournaments</div>`;
+                
+                snapshot.forEach(doc => {
+                    const t = doc.data();
+                    list.innerHTML += `
+                        <div class="glass-card p-5">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-lg font-bold">${t.name}</h3>
+                                <span class="tag tag-${t.mode}">${t.mode}</span>
+                            </div>
+                            <p class="text-blue-400 text-sm font-medium mb-1">${t.date}</p>
+                            <p class="text-emerald-400 text-sm font-bold mb-3">${t.prize}</p>
+                            <p class="text-gray-400 text-sm mb-4 leading-relaxed">${t.description}</p>
+                            <div class="flex flex-wrap gap-2">
+                                ${t.orgs.map(o => `<span class="bg-white/5 border border-white/10 px-2 py-1 rounded text-[10px] text-gray-300">@${o}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                updateManageList();
+            });
+
+            const qTeams = window.fbUtils.query(window.fbUtils.collection(window.db, "teams"), window.fbUtils.orderBy("createdAt", "desc"));
+            window.fbUtils.onSnapshot(qTeams, (snapshot) => {
+                const list = document.getElementById('teams-list');
+                list.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const t = doc.data();
+                    list.innerHTML += `
+                        <div class="glass-card overflow-hidden !p-0">
+                            <img src="${t.banner}" class="team-banner" alt="banner">
+                            <div class="team-logo-container">
+                                <img src="${t.logo}" class="team-logo" alt="logo">
+                            </div>
+                            <div class="px-5 pb-6 pt-2">
+                                <div class="flex justify-between items-center mb-1">
+                                    <h3 class="text-xl font-bold">${t.name}</h3>
+                                    <span class="text-xs border border-white/20 px-2 py-0.5 rounded text-gray-400">${t.age}</span>
+                                </div>
+                                <p class="text-blue-400 text-sm mb-3">Captain: ${t.captain}</p>
+                                <p class="text-gray-400 text-sm mb-5 leading-relaxed">${t.description}</p>
+                                <a href="${t.link}" target="_blank" class="block w-full text-center py-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition font-medium text-sm">Связаться с Капитаном</a>
+                            </div>
+                        </div>
+                    `;
+                });
+                updateManageList();
+            });
+
+            const qShops = window.fbUtils.query(window.fbUtils.collection(window.db, "shops"), window.fbUtils.orderBy("createdAt", "desc"));
+            window.fbUtils.onSnapshot(qShops, (snapshot) => {
+                const list = document.getElementById('shops-list');
+                list.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const s = doc.data();
+                    list.innerHTML += `
+                        <div class="glass-card overflow-hidden !p-0">
+                            <img src="${s.banner}" class="team-banner" alt="banner">
+                            <div class="team-logo-container">
+                                <img src="${s.logo}" class="team-logo" alt="logo">
+                            </div>
+                            <div class="px-5 pb-6 pt-2">
+                                <h3 class="text-xl font-bold mb-4">${s.name}</h3>
+                                <div class="bg-black/20 rounded-lg p-4 border border-white/5">
+                                    <p class="text-xs text-gray-500 uppercase mb-2">Список цен / Услуги</p>
+                                    <pre class="text-sm text-gray-300 font-sans whitespace-pre-wrap">${s.prices}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                updateManageList();
+            });
+        }
+
+        async function updateManageList() {
+            const container = document.getElementById('admin-manage-list');
+            container.innerHTML = '';
+            
+            const cols = ['tournaments', 'teams', 'shops'];
+            for (const col of cols) {
+                const snap = await window.fbUtils.onSnapshot(window.fbUtils.collection(window.db, col), (snapshot) => {
+                    // This is a bit redundant but for simplicity in manage panel:
+                    snapshot.forEach(d => {
+                        const existing = document.getElementById(`manage-${d.id}`);
+                        if (existing) existing.remove();
+                        
+                        const item = d.data();
+                        const div = document.createElement('div');
+                        div.id = `manage-${d.id}`;
+                        div.className = "flex justify-between items-center p-3 bg-white/5 rounded border border-white/5 text-sm";
+                        div.innerHTML = `
+                            <span><strong class="uppercase text-gray-500">[${col}]</strong> ${item.name}</span>
+                            <button onclick="deleteItem('${col}', '${d.id}')" class="btn-delete">Удалить</button>
+                        `;
+                        container.appendChild(div);
+                    });
+                });
+            }
+        }
+    </script>
+</body>
+</html>
